@@ -1,2 +1,1 @@
-uv_threadsafe_example
-=====================
+Currently not threadsafe.
