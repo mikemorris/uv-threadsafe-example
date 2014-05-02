@@ -1,6 +1,8 @@
 ```
 malloc: *** error for object 0x7fa1406ffffc: pointer being freed was not allocated
-
+```
+```
+lldb ./main.o
 * thread #2: tid = 0xaa9e9, 0x00007fff8c4d7ba4 libsystem_platform.dylib`_platform_memmove$VARIANT$Unknown + 164, stop reason = EXC_BAD_ACCESS (code=1, address=0x1006ffff4)
   * frame #0: 0x00007fff8c4d7ba4 libsystem_platform.dylib`_platform_memmove$VARIANT$Unknown + 164
     frame #1: 0x000000010000333a main.o`std::__1::vector<int, std::__1::allocator<int> >::__swap_out_circular_buffer(std::__1::__split_buffer<int, std::__1::allocator<int>&>&) + 250
