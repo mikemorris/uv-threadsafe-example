@@ -1,43 +1,64 @@
 #include <atomic>
 #include <memory>
-#include <vector>
+#include <map>
 #include <iostream>
 
 // libuv
 #include <uv.h>
 
-typedef std::vector<int> vector_type;
+template <class K, class V, class Compare = std::less<K>,
+          class Allocator = std::allocator<std::pair<const K, V> > >
+
+class guarded_map {
+  private:
+    std::map<K, V, Compare, Allocator> map;
+    std::mutex mutex;
+
+  public:
+    void emplace(K key, V value) {
+      std::lock_guard<std::mutex> lock(this->mutex);
+      this->map.emplace(key, value);
+    }
+
+    V & get(K key) {
+      std::lock_guard<std::mutex> lock(this->mutex);
+      return this->map[key];
+    }
+
+    bool empty() {
+      std::lock_guard<std::mutex> lock(this->mutex);
+      return this->map.empty();
+    }
+};
+
+typedef guarded_map<int, bool> map_type;
 
 struct Baton {
   int num;
-  std::shared_ptr<vector_type> ptr;
+  std::shared_ptr<map_type> map;
 };
 
-void AsyncReadWriteVector(uv_work_t* req) {
+void AsyncReadWritemap(uv_work_t* req) {
   Baton* baton = static_cast<Baton*>(req->data);
-  std::shared_ptr<vector_type> ptr = baton->ptr;
+  std::shared_ptr<map_type> const map = baton->map;
+  int num = baton->num;
 
-  auto vector = std::atomic_load(&ptr);
-  vector->push_back(baton->num);
+  map->emplace(num, true);
 
-  for (auto const& num : *vector) {
-    std::cout << num << ' ';
-  }
-
-  std::cout<< '\n';
+  std::cout << map->get(num) << ' ';
 }
 
 int main() {
-  std::shared_ptr<vector_type> vector_ptr(new vector_type);
+  auto map_ptr = std::make_shared<map_type>();
 
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 1000; i++) {
     Baton* baton = new Baton();
     baton->num = i;
-    baton->ptr = vector_ptr;
+    baton->ptr = map_ptr;
 
     uv_work_t *req = new uv_work_t();
     req->data = baton;
 
-    uv_queue_work(uv_default_loop(), req, AsyncReadWriteVector, (uv_after_work_cb)nullptr);
+    uv_queue_work(uv_default_loop(), req, AsyncReadWritemap, (uv_after_work_cb)nullptr);
   }
 }
