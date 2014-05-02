@@ -11,10 +11,18 @@ template <class K, class V, class Compare = std::less<K>,
 
 class guarded_map {
   private:
-    std::map<K, V, Compare, Allocator> map;
+    typedef std::map<K, V, Compare, Allocator> map_type;
+    map_type map;
     std::mutex mutex;
 
   public:
+    typedef typename map_type::const_iterator const_iterator;
+
+    const_iterator find(K key) {
+      std::lock_guard<std::mutex> lock(this->mutex);
+      return this->map.find(key);
+    }
+    
     void emplace(K key, V value) {
       std::lock_guard<std::mutex> lock(this->mutex);
       this->map.emplace(key, value);
@@ -44,8 +52,9 @@ void AsyncReadWritemap(uv_work_t* req) {
   int num = baton->num;
 
   map->emplace(num, true);
+  map_type::const_iterator itr = map->find(num);
 
-  std::cout << map->get(num) << ' ';
+  std::cout << itr->first << ' ';
 }
 
 int main() {
