@@ -54,7 +54,7 @@ int main() {
   for (int i = 0; i < 1000; i++) {
     Baton* baton = new Baton();
     baton->num = i;
-    baton->ptr = map_ptr;
+    baton->map = map_ptr;
 
     uv_work_t *req = new uv_work_t();
     req->data = baton;
