@@ -1,4 +1,3 @@
-#include <atomic>
 #include <memory>
 #include <map>
 #include <iostream>
@@ -12,25 +11,21 @@ template <class K, class V, class Compare = std::less<K>,
 class guarded_map {
   private:
     typedef std::map<K, V, Compare, Allocator> map_type;
+
     map_type map;
     std::mutex mutex;
 
   public:
     typedef typename map_type::const_iterator const_iterator;
 
+    std::pair<const_iterator, bool> emplace(K key, V value) {
+      std::lock_guard<std::mutex> lock(this->mutex);
+      return this->map.emplace(key, value);
+    }
+
     const_iterator find(K key) {
       std::lock_guard<std::mutex> lock(this->mutex);
       return this->map.find(key);
-    }
-    
-    void emplace(K key, V value) {
-      std::lock_guard<std::mutex> lock(this->mutex);
-      this->map.emplace(key, value);
-    }
-
-    V & get(K key) {
-      std::lock_guard<std::mutex> lock(this->mutex);
-      return this->map[key];
     }
 
     bool empty() {
@@ -60,7 +55,7 @@ void AsyncReadWritemap(uv_work_t* req) {
 int main() {
   auto map_ptr = std::make_shared<map_type>();
 
-  for (int i = 0; i < 1000; i++) {
+  for (int i = 0; i < 10000; i++) {
     Baton* baton = new Baton();
     baton->num = i;
     baton->map = map_ptr;
